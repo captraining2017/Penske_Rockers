@@ -15,9 +15,7 @@ public class dailyTransaction implements Serializable{
 	private double totalCredits;
 	
 	private Integer debitCount;
-	private double totalDebits;
-	
-	private custTransaction custTrans;
+	private double totalDebits;	
 	
 	public Integer getCreditCount() {
 		return creditCount;
@@ -42,14 +40,6 @@ public class dailyTransaction implements Serializable{
 	}
 	public void setTotalCredits(double totalCredits) {
 		this.totalCredits = totalCredits;
-	}
-	public custTransaction getCustTrans() {
-		return custTrans;
-	}
-	public void setCustTrans(custTransaction custTrans) {
-		this.custTrans = custTrans;
-	}
-	
-	
+	}	
 
 }
