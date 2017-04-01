@@ -102,12 +102,14 @@ public class fraudDetection {
             				System.out.println("new Debit data");
             				trans.setDebitCount(1);                				
             				trans.setTotalDebits((Double.parseDouble(data[3])));
+            				trans.setCreditCount(0); 
             			}
             			
             			if (!data[4].isEmpty()) {
             				System.out.println("new credit data");
             				trans.setCreditCount(1);                				
             				trans.setTotalCredits((Double.parseDouble(data[4])));
+            				trans.setDebitCount(0);  
             			}              			
                 		
                 			dailyTrans.put(dateStr, trans);
@@ -133,10 +135,10 @@ public class fraudDetection {
         if (custTransMap != null) {
         	for (Entry<Long, Map<String, dailyTransaction>> entry : custTransMap.entrySet()) {
         		System.out.println("Key : " + entry.getKey() + " Value : " + entry.getValue());
-        		Map<String, dailyTransaction> dailyTrans = (HashMap<String, dailyTransaction>) entry.getValue() ;
+        		Map<String, dailyTransaction> dailyTrans = (Map<String, dailyTransaction>) entry.getValue() ;
         		for (Entry<String, dailyTransaction> entry1 : dailyTrans.entrySet()) {
         			System.out.println("Key : " + entry1.getKey() + " Value : " + entry1.getValue());
-        			dailyTransaction trans =  (dailyTransaction) ((Object)entry.getValue()) ;
+        			dailyTransaction trans =  (dailyTransaction) (entry1.getValue()) ;
         			System.out.println("Total Credits : " + trans.getTotalCredits() + "Credit Count : " + trans.getCreditCount()
         			+ "Total Debits : " + trans.getTotalDebits() + "Debit Count : " + trans.getDebitCount());
         		}
