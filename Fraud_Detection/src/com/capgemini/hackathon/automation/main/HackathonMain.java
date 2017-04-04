@@ -27,7 +27,7 @@ public class HackathonMain {
 		ConfigurationModel configModelObj = null;
 		try 
 		{
-			input = new FileInputStream("D:\\DemonetizationFraudAlert\\bin\\conf\\fraudAlert.properties");
+			input = new FileInputStream("D:\\Hackathon\\Fraud_Detection\\bin\\conf\\fraudAlert.properties");
 			prop.load(input);
 			configModelObj=populateConfigModelObj(prop);
 	 	} 
@@ -94,6 +94,25 @@ public class HackathonMain {
 		String highSalaryCustomerPercent=prop.getProperty("FraudAlert_HighSalary_Customer_Percent");
 		String deMonetizationCRNoTimeIncr=prop.getProperty("FraudAlert_Demonetization_CR_Incr_No_Time");
 		String deMonetizationDRNoTimeIncr=prop.getProperty("FraudAlert_Demonetization_DR_Incr_No_Time");
+		String drTxnComment[] =prop.getProperty("FraudAlert_Transaction_DR_Comment").split(",");
+		String fraudCRProcess[] =prop.getProperty("FraudAlert_Fraud_CR_enable_process").split(",");
+		String fraudCRTxnNoIncr[] =prop.getProperty("FraudAlert_Fraud_Sudden_CR_incr_no").split(",");
+		
+		List<String>  fraudCRProcessList = new ArrayList<String>(fraudCRProcess.length);
+		for (int i = 0; i < fraudCRProcess.length; i++) {
+			fraudCRProcessList.add(fraudCRProcess[i]);
+		}
+		
+		List<Integer>  fraudCRTxnNoIncrList = new ArrayList<Integer>(fraudCRTxnNoIncr.length);
+		for (int i = 0; i < fraudCRTxnNoIncr.length; i++) {
+			fraudCRTxnNoIncrList.add(Integer.valueOf(fraudCRTxnNoIncr[i]));
+		}
+		
+		
+		List<String>  drTxnCommentList = new ArrayList<String>(drTxnComment.length);
+		for (int i = 0; i < drTxnComment.length; i++) {
+			drTxnCommentList.add(drTxnComment[i]);
+		}
 		List<String>  txnTypeList = new ArrayList<String>(txnTypesArr.length);
 		for (int i = 0; i < txnTypesArr.length; i++) {
 			txnTypeList.add(txnTypesArr[i]);
@@ -109,6 +128,7 @@ public class HackathonMain {
 		for (int i = 0; i < year.length; i++) {
 			yearsArrList.add(Integer.valueOf(year[i]));
 		}
+		
 		
 		configObj.setMasterEmployeeFilePath(masterEmployeeFilePath);
 		configObj.setCustomerTxnDataFilePath(customerTxnDataFilePath);
@@ -149,8 +169,10 @@ public class HackathonMain {
 		
 		configObj.setDeMonetizationCRNoTimeIncr(Integer.valueOf(deMonetizationCRNoTimeIncr));
 		configObj.setDeMonetizationDRNoTimeIncr(Integer.valueOf(deMonetizationDRNoTimeIncr));
-		
+		configObj.setDrTxnSummaryList(drTxnCommentList);
 		configObj.setTxnTypeList(txnTypeList);
+		configObj.setFraudCRProcess(fraudCRProcessList);
+		configObj.setFraudCRTxnNoIncr(fraudCRTxnNoIncrList);
 		return configObj;
 	}
 	
