@@ -67,7 +67,7 @@ public class ObjectBuilder {
 					String month[] = sdf.format(date).split("-");					 				
 					
 					if(data.length >= 5 && !data[4].isEmpty()) {
-						if (data[4].equalsIgnoreCase("DB")) {
+						if (data[4].equalsIgnoreCase("DR")) {
 							isCredit = false;
 						}
 					}
@@ -146,7 +146,7 @@ public class ObjectBuilder {
 						}
 					
 					if(data.length == 6 && !data[5].isEmpty()) {
-						if (data[5].equalsIgnoreCase("CASH")) {
+						if (data[5].startsWith("CASH") || data[5].startsWith("BANKDEPOSIT")) {
 							
 							if (isCredit) {								
 								double addAmt = (customerInfo.get(Long.parseLong(data[0]))).getCashCredit() + Double.parseDouble(data[3]);
@@ -166,7 +166,7 @@ public class ObjectBuilder {
 					if (intMonth > 10) {    					
     					
 						if(data.length == 6 && !data[5].isEmpty()) {
-							if (data[5].equalsIgnoreCase("CASH")) {
+							if (data[5].startsWith("CASH")) {
 								
 		    					String custProfile = customerInfo.get(Long.parseLong(data[0])).getProfileCategory();
 		    					double custCashDebit = (customerInfo.get(Long.parseLong(data[0]))).getCashDebit();    					
