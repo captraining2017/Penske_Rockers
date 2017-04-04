@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,7 +18,8 @@ import com.capgemini.hackathon.automation.model.Employee;
 public class HugeDataSetCreationUtil {
 
 	private static final String COMMA_DELIMITER = ",";
-	private static final String FILE_HEADER = "Cust Id,Txn Date,Txn Amount,DR/CR";
+	private static final String FILE_HEADER = "Cust Id,Txn Date,Txn Amount,DR/CR,Summary";
+	private static SimpleDateFormat sdf1 = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 	private static final String NEW_LINE_SEPARATOR = "\n";
     private static Long lowSalaryCRMonthlyCount =0L;
     private static Long mediumSalaryCRMonthlyCount =0L;
@@ -37,6 +39,7 @@ public class HugeDataSetCreationUtil {
 			fileWriter.append(FILE_HEADER.toString());
 			fileWriter.append(NEW_LINE_SEPARATOR);
 			Random randomizer = new Random();
+			Double dRAndCrDifferent=0.0;
 			
 			for (int yearCount = 0; yearCount < configObj.getYears().size(); yearCount++) {
 				for (int monthCount = 0; monthCount < configObj.getMonths().size(); monthCount++) {
@@ -57,10 +60,13 @@ public class HugeDataSetCreationUtil {
 					{
 						for (Employee employee : employeeList) {
 							// monthly starting salary credit transaction
-							Double monthlySalary= employee.getSalary() /12; 
+							Double monthlySalary= employee.getSalary() ; 
 							employee.setNoOfBankCR(0);
 							employee.setNoOfBankDR(0);
-							writeTxnFile(fileWriter, firstDateOfMonth, employee.getEmployeeId(), monthlySalary, configObj.getDelimiter(),"CR",true );
+							employee.setCreditAmt(monthlySalary);
+							employee.setDebitAmt(0.0);
+							employee.setSummary("SALARY");
+							writeTxnFile(fileWriter, firstDateOfMonth, employee, monthlySalary, configObj.getDelimiter(),"CR" );
 							employee.setNoOfBankCR(employee.getNoOfBankCR() +1);
 							System.out.println(employee.getEmployeeId()+","+firstDateOfMonth.toString()+","+monthlySalary+","+"CR" +"," +employee.getNoOfBankDR()+","+employee.getNoOfBankCR()+","+lowSalaryCRMonthlyCount);
 							
@@ -74,84 +80,120 @@ public class HugeDataSetCreationUtil {
 							Date randomDate=eachMonthDates.get(randomizer.nextInt(eachMonthDates.size()));
 							Employee randomEmployee=employeeList.get(randomizer.nextInt(employeeList.size()));
 							String txnType =configObj.getTxnTypeList().get(randomizer.nextInt(configObj.getTxnTypeList().size()));
-							Double txnAmt = getCustomerTxnAmount(randomEmployee, configObj, txnType, randomizer);
+							String drTxnComment =configObj.getDrTxnSummaryList().get(randomizer.nextInt(configObj.getDrTxnSummaryList().size()));
+							Double txnAmt=0.0;
+							if ("LOAN".equalsIgnoreCase(drTxnComment.trim()) ) {
+								if(randomEmployee.getLoanAmount() ==0.0) {
+									txnAmt = getCustomerTxnAmount(randomEmployee, configObj, txnType, randomizer);
+									randomEmployee.setLoanAmount(txnAmt);
+								}
+								txnAmt = randomEmployee.getLoanAmount() ;
+							}
+							else {
+								txnAmt = getCustomerTxnAmount(randomEmployee, configObj, txnType, randomizer);
+							}
+							
 							isMonthlyTxnCompleted = true;
 							if(randomEmployee.getSalary()<= configObj.getMaxLowSalaryRange() && !isMonthlyTxnLowSalaryCompleted(configObj,txnType,randomDate)) {
 								isMonthlyTxnCompleted = false;
 								if("CR".equalsIgnoreCase(txnType)) {
-									if(!demonitizationFlagEnabled && configObj.getLowSalaryTxnNoDRAndCRBefore().get(1)>=randomEmployee.getNoOfBankCR()) {
-										++lowSalaryCRMonthlyCount;
+									if(!demonitizationFlagEnabled && configObj.getLowSalaryTxnNoDRAndCRBefore().get(1)>randomEmployee.getNoOfBankCR()) {
 										randomEmployee.setNoOfBankCR(randomEmployee.getNoOfBankCR() +1);
-										writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-										System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+lowSalaryCRMonthlyCount);
+										randomEmployee.setCreditAmt(randomEmployee.getCreditAmt() + txnAmt);
+										randomEmployee.setSummary("OTHERS");
+										writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
 									}
 									if(demonitizationFlagEnabled ) {
 										Integer predictedDemonCRTxnNo=configObj.getLowSalaryTxnNoDRAndCRAfter().get(1) * configObj.getDeMonetizationCRNoTimeIncr();
-										if(predictedDemonCRTxnNo>=randomEmployee.getNoOfBankCR()) {
-											++lowSalaryCRMonthlyCount;
+										if(predictedDemonCRTxnNo>randomEmployee.getNoOfBankCR()) {
+											randomEmployee.setSummary("OTHERS");
 											randomEmployee.setNoOfBankCR(randomEmployee.getNoOfBankCR() +1);
-											writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-											System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+lowSalaryCRMonthlyCount);
+											randomEmployee.setCreditAmt(randomEmployee.getCreditAmt() + txnAmt);
+											writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											String isfraudCRProcesEnable=configObj.getFraudCRProcess().get(randomizer.nextInt(configObj.getFraudCRProcess().size()));
+											if("true".equalsIgnoreCase(isfraudCRProcesEnable)) {
+												fraudCRAfterDemonetization(randomizer, month, firstDateOfMonth, employeeList, configObj, fileWriter);
+											}
 										}
 									}
+									++lowSalaryCRMonthlyCount;
 								}
 								else if("DR".equalsIgnoreCase(txnType)  ) {
-									if(!demonitizationFlagEnabled ) {
-										Integer predictedDemonDRTxnNo=configObj.getLowSalaryTxnNoDRAndCRAfter().get(0) * configObj.getDeMonetizationDRNoTimeIncr();
-										if(predictedDemonDRTxnNo>=randomEmployee.getNoOfBankCR()) {
-											++lowSalaryDRMonthlyCount;
+									dRAndCrDifferent=randomEmployee.getCreditAmt() - randomEmployee.getDebitAmt();
+									if(!demonitizationFlagEnabled && configObj.getLowSalaryTxnNoDRAndCRAfter().get(0) >randomEmployee.getNoOfBankDR()
+											&& dRAndCrDifferent>=0.0) {
 											randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
-											writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-											System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+lowSalaryDRMonthlyCount);
-										}
+											randomEmployee.setDebitAmt(randomEmployee.getDebitAmt() + txnAmt);
+											randomEmployee.setSummary(drTxnComment);
+											writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											//System.out.println(randomEmployee.getEmployeeId()+","+randomDate+","+randomEmployee.getCreditAmt()+","+randomEmployee.getDebitAmt()+","+dRAndCrDifferent);
 									}
-									if(demonitizationFlagEnabled && configObj.getLowSalaryTxnNoDRAndCRAfter().get(0)>=randomEmployee.getNoOfBankDR()) {
-										++lowSalaryDRMonthlyCount;
-										randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
-										writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-										System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+lowSalaryDRMonthlyCount);
+									if(demonitizationFlagEnabled ) {
+										Integer predictedDemonDRTxnNo=configObj.getLowSalaryTxnNoDRAndCRAfter().get(0) *   configObj.getDeMonetizationDRNoTimeIncr();
+										randomEmployee.setDebitAmt(randomEmployee.getDebitAmt() + txnAmt);
+										if(predictedDemonDRTxnNo>randomEmployee.getNoOfBankDR()   ){
+											randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
+											randomEmployee.setSummary(drTxnComment);
+											if(dRAndCrDifferent>=0.0)
+												writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											//System.out.println(randomEmployee.getEmployeeId()+","+randomDate+","+randomEmployee.getCreditAmt()+","+randomEmployee.getDebitAmt()+","+dRAndCrDifferent);
 									}
-
 								}
-								
+									++lowSalaryDRMonthlyCount;
 							}
+								
+						}
 							if(configObj.getMaxLowSalaryRange() < randomEmployee.getSalary() &&  randomEmployee.getSalary()<= configObj.getMaxMediumSalaryRange()
 									&& !isMonthlyTxnMediumSalaryCompleted(configObj, txnType,randomDate)) {
 								isMonthlyTxnCompleted = false;
 								if("CR".equalsIgnoreCase(txnType)  ) {
-									if(!demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRBefore().get(1)>=randomEmployee.getNoOfBankCR()) {
-										++mediumSalaryCRMonthlyCount;
+									if(!demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRBefore().get(1)>randomEmployee.getNoOfBankCR()) {
 										randomEmployee.setNoOfBankCR(randomEmployee.getNoOfBankCR() +1);
-										writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-										System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+mediumSalaryCRMonthlyCount);
+										randomEmployee.setCreditAmt(randomEmployee.getCreditAmt() + txnAmt);
+										randomEmployee.setSummary("OTHERS");
+										writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
 									}
-									if(demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRAfter().get(1)>=randomEmployee.getNoOfBankCR()) {
+									if(demonitizationFlagEnabled ) {
 										Integer predictedDemonCRTxnNo=configObj.getMediumSalaryTxnNoDRAndCRAfter().get(1) * configObj.getDeMonetizationCRNoTimeIncr();
-										if(predictedDemonCRTxnNo>=randomEmployee.getNoOfBankCR()) {
-											++mediumSalaryCRMonthlyCount;
+										if(predictedDemonCRTxnNo>randomEmployee.getNoOfBankCR()) {
+											
 											randomEmployee.setNoOfBankCR(randomEmployee.getNoOfBankCR() +1);
-											writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-											System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+mediumSalaryCRMonthlyCount);
+											randomEmployee.setCreditAmt(randomEmployee.getCreditAmt() + txnAmt);
+											randomEmployee.setSummary("OTHERS");
+											writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											String isfraudCRProcesEnable=configObj.getFraudCRProcess().get(randomizer.nextInt(configObj.getFraudCRProcess().size()));
+											if("true".equalsIgnoreCase(isfraudCRProcesEnable)) {
+												fraudCRAfterDemonetization(randomizer, month, firstDateOfMonth, employeeList, configObj, fileWriter);
+											}
 										}
 									}
+									++mediumSalaryCRMonthlyCount;
 								}
 								
 								else if("DR".equalsIgnoreCase(txnType)  ) {
-									if(!demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRBefore().get(0)>=randomEmployee.getNoOfBankDR()) {
-										++mediumSalaryDRMonthlyCount;
+									dRAndCrDifferent=randomEmployee.getCreditAmt() - randomEmployee.getDebitAmt();
+									if(!demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRBefore().get(0)>randomEmployee.getNoOfBankDR()
+											&&  dRAndCrDifferent>=0.0) {
+										
 										randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
-										writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-										System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+mediumSalaryDRMonthlyCount);
+										randomEmployee.setDebitAmt(randomEmployee.getDebitAmt() + txnAmt);
+										randomEmployee.setSummary(drTxnComment);
+										if(dRAndCrDifferent>=0.0)
+											writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType);
+										//System.out.println(randomEmployee.getEmployeeId()+","+randomDate+","+randomEmployee.getCreditAmt()+","+randomEmployee.getDebitAmt()+","+dRAndCrDifferent);
 									}
 									if(demonitizationFlagEnabled  ) {
 										Integer predictedDemonDRTxnNo=configObj.getMediumSalaryTxnNoDRAndCRAfter().get(0) * configObj.getDeMonetizationDRNoTimeIncr();
-										if(predictedDemonDRTxnNo>=randomEmployee.getNoOfBankDR()){
-											++mediumSalaryDRMonthlyCount;
+										randomEmployee.setDebitAmt(randomEmployee.getDebitAmt() + txnAmt);
+										if(predictedDemonDRTxnNo>randomEmployee.getNoOfBankDR() &&  dRAndCrDifferent>=0.0){
 											randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
-											writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-											System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+mediumSalaryDRMonthlyCount);
+											randomEmployee.setSummary(drTxnComment);
+											if(dRAndCrDifferent>=0.0)
+												writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											//System.out.println(randomEmployee.getEmployeeId()+","+randomDate+","+randomEmployee.getCreditAmt()+","+randomEmployee.getDebitAmt()+","+dRAndCrDifferent);
 										}
 									}
+									++mediumSalaryDRMonthlyCount;
 								}
 								
 							}
@@ -159,39 +201,51 @@ public class HugeDataSetCreationUtil {
 									&& !isMonthlyTxnHighSalaryCompleted(configObj, txnType,randomDate)) {
 								isMonthlyTxnCompleted =false; 
 								if("CR".equalsIgnoreCase(txnType) ) {
-									if(!demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRBefore().get(1)>=randomEmployee.getNoOfBankCR()) {
-										++highSalaryCRMonthlyCount;
+									if(!demonitizationFlagEnabled && configObj.getMediumSalaryTxnNoDRAndCRBefore().get(1)>randomEmployee.getNoOfBankCR()) {
 										randomEmployee.setNoOfBankCR(randomEmployee.getNoOfBankCR() +1);
-										writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-										System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+highSalaryCRMonthlyCount);
+										randomEmployee.setCreditAmt(randomEmployee.getCreditAmt() + txnAmt);
+										randomEmployee.setSummary("OTHERS");
+										writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
 									}
 									if(demonitizationFlagEnabled  ) {
 										Integer predictedDemonCRTxnNo=configObj.getHighSalaryTxnNoDRAndCRAfter().get(1) * configObj.getDeMonetizationCRNoTimeIncr();
 										if(predictedDemonCRTxnNo>=randomEmployee.getNoOfBankCR())
 										{
-											++highSalaryCRMonthlyCount;
 											randomEmployee.setNoOfBankCR(randomEmployee.getNoOfBankCR() +1);
-											writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-											System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+highSalaryCRMonthlyCount);
+											randomEmployee.setCreditAmt(randomEmployee.getCreditAmt() + txnAmt);
+											randomEmployee.setSummary("OTHERS");
+											writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											String isfraudCRProcesEnable=configObj.getFraudCRProcess().get(randomizer.nextInt(configObj.getFraudCRProcess().size()));
+											if("true".equalsIgnoreCase(isfraudCRProcesEnable)) {
+												fraudCRAfterDemonetization(randomizer, month, firstDateOfMonth, employeeList, configObj, fileWriter);
+											}
 										}
 									}
+									++highSalaryCRMonthlyCount;
 								}
 								else if("DR".equalsIgnoreCase(txnType)  ) {
-									if(!demonitizationFlagEnabled && configObj.getHighSalaryTxnNoDRAndCRBefore().get(0)>=randomEmployee.getNoOfBankDR()) {
-										++highSalaryDRMonthlyCount;
+									dRAndCrDifferent=randomEmployee.getCreditAmt() - randomEmployee.getDebitAmt();
+									if(!demonitizationFlagEnabled && configObj.getHighSalaryTxnNoDRAndCRBefore().get(0)>randomEmployee.getNoOfBankDR()
+											&&  dRAndCrDifferent>=0.0) {
 										randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
-										writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-										System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+highSalaryDRMonthlyCount);
+										randomEmployee.setDebitAmt(randomEmployee.getDebitAmt() + txnAmt);
+										randomEmployee.setSummary(drTxnComment);
+										if(dRAndCrDifferent>=0.0)
+											writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType);
+										//System.out.println(randomEmployee.getEmployeeId()+","+randomDate+","+randomEmployee.getCreditAmt()+","+randomEmployee.getDebitAmt()+","+dRAndCrDifferent);
 									}
 									if(demonitizationFlagEnabled ) {
 										Integer predictedDemonDRTxnNo=configObj.getHighSalaryTxnNoDRAndCRAfter().get(0) * configObj.getDeMonetizationDRNoTimeIncr();
-										if(predictedDemonDRTxnNo>=randomEmployee.getNoOfBankDR()) {
-											++highSalaryDRMonthlyCount;
+										randomEmployee.setDebitAmt(randomEmployee.getDebitAmt() + txnAmt);
+										if(predictedDemonDRTxnNo>randomEmployee.getNoOfBankDR() &&  dRAndCrDifferent>=0.0) {
 											randomEmployee.setNoOfBankDR(randomEmployee.getNoOfBankDR() +1);
-											writeTxnFile(fileWriter, randomDate, randomEmployee.getEmployeeId(), txnAmt,configObj.getDelimiter(),txnType,false );
-											System.out.println(randomEmployee.getEmployeeId()+","+randomDate.toString()+","+txnAmt+","+txnType +"," +randomEmployee.getNoOfBankDR()+","+randomEmployee.getNoOfBankCR()+","+highSalaryDRMonthlyCount);
+											randomEmployee.setSummary(drTxnComment);
+											if(dRAndCrDifferent>=0.0)
+												writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt,configObj.getDelimiter(),txnType );
+											//System.out.println(randomEmployee.getEmployeeId()+","+randomDate+","+randomEmployee.getCreditAmt()+","+randomEmployee.getDebitAmt()+","+dRAndCrDifferent);
 										}
 									}
+									++highSalaryDRMonthlyCount;
 								}
 								
 							}
@@ -425,18 +479,39 @@ private static boolean isMonthlyTxnHighSalaryCompleted(ConfigurationModel config
 		return employeeList;
 	}
 	
-	private static void writeTxnFile(FileWriter fileWriter, Date txnDate, Integer employeeId, Double txnAmount,String delimiter, 
-			String txnType, boolean isSalaryCredit) {
+	private static void fraudCRAfterDemonetization(Random randomizer,int month, Date firstDateOfMonth, List<Employee> employeeList, 
+			ConfigurationModel configObj,FileWriter fileWriter) {
+		
+		List<Date> eachMonthDates = DateUtil.getMonthDateList(month, firstDateOfMonth);
+		Date randomDate=eachMonthDates.get(randomizer.nextInt(eachMonthDates.size()));
+		Integer crRandomTxnCount=configObj.getFraudCRTxnNoIncr().get(randomizer.nextInt(configObj.getFraudCRTxnNoIncr().size()));
+		String txnType ="CR";
+		String drTxnComment ="OTHER";
+		Double txnAmt=0.0;
+		for (int i = 0; i < crRandomTxnCount; i++) {
+			Employee randomEmployee=employeeList.get(randomizer.nextInt(employeeList.size()));			
+			txnAmt = getCustomerTxnAmount(randomEmployee, configObj, txnType, randomizer);
+			writeTxnFile(fileWriter, randomDate, randomEmployee, txnAmt, configObj.getDelimiter(), txnType);
+		}
+		
+	}
+	
+	private static void writeTxnFile(FileWriter fileWriter, Date txnDate, Employee employee, Double txnAmount,String delimiter, 
+			String txnType) {
 		
 		try {
 			
-			fileWriter.append(String.valueOf(employeeId));
+			
+			String formatedDate = sdf1.format(txnDate);
+			fileWriter.append(String.valueOf(employee.getEmployeeId()));
 			fileWriter.append(delimiter);
-			fileWriter.append(String.valueOf(txnDate));
+			fileWriter.append(String.valueOf(formatedDate));
 			fileWriter.append(delimiter);
 			fileWriter.append(String.valueOf(txnAmount));
 			fileWriter.append(delimiter);
 			fileWriter.append(String.valueOf(txnType));
+			fileWriter.append(delimiter);
+			fileWriter.append(String.valueOf(employee.getSummary()));
 			fileWriter.append(NEW_LINE_SEPARATOR);
 			
             //Add a new line separator after the header
