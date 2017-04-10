@@ -13,6 +13,7 @@ import com.capgemini.hackathon.automation.util.HugeDataSetCreationUtil;
 
 public class HackathonMain {
 
+	private static final String CONFIG_FILE_PATH="D:\\Hackathon\\Fraud_Detection\\bin\\conf\\fraudAlert.properties";
 	
 	public static void main(String[] args) {
 		
@@ -27,7 +28,7 @@ public class HackathonMain {
 		ConfigurationModel configModelObj = null;
 		try 
 		{
-			input = new FileInputStream("D:\\Hackathon\\Fraud_Detection\\bin\\conf\\fraudAlert.properties");
+			input = new FileInputStream(CONFIG_FILE_PATH);
 			prop.load(input);
 			configModelObj=populateConfigModelObj(prop);
 	 	} 
@@ -89,9 +90,17 @@ public class HackathonMain {
 		String highSalaryDRAfter []=prop.getProperty("FraudAlert_highsalary_DR").split(",");
 		
 		String deMonetizationCR [] =prop.getProperty("FraudAlert_Demonetization_CR").split(",");
+		String lowSalaryAvgSavingPercent=prop.getProperty("FraudAlert_lowsalary_avg_saving_percent");
+		String mediumSalaryAvgSavingPercent=prop.getProperty("FraudAlert_mediumsalary_avg_saving_percent");
+		String highSalaryAvgSavingPercent=prop.getProperty("FraudAlert_highsalary_avg_saving_percent");
+		
 		String lowSalaryCustomerPercent=prop.getProperty("FraudAlert_LowSalary_Customer_Percent");
 		String mediumSalaryCustomerPercent=prop.getProperty("FraudAlert_MediumSalary_Customer_Percent");
 		String highSalaryCustomerPercent=prop.getProperty("FraudAlert_HighSalary_Customer_Percent");
+		
+		String deMonetizationMaxDepositThreshold=prop.getProperty("FraudAlert_Demonetization_Max_Thresold_Deposit");
+		String deMonetizationMaxDailyDepositThreshold=prop.getProperty("FraudAlert_Demonetization_Max_Daily_Thresold_Deposit");
+		
 		String deMonetizationCRNoTimeIncr=prop.getProperty("FraudAlert_Demonetization_CR_Incr_No_Time");
 		String deMonetizationDRNoTimeIncr=prop.getProperty("FraudAlert_Demonetization_DR_Incr_No_Time");
 		String drTxnComment[] =prop.getProperty("FraudAlert_Transaction_DR_Comment").split(",");
@@ -163,9 +172,16 @@ public class HackathonMain {
 		
 		configObj.setDemonitizationCR(getDRAndCRAmtList(deMonetizationCR));
 		
+		configObj.setLowSalaryAvgSavingPercent(Float.valueOf(lowSalaryAvgSavingPercent));
+		configObj.setMediumSalaryAvgSavingPercent(Float.valueOf(mediumSalaryAvgSavingPercent));
+		configObj.setHighSalaryAvgSavingPercent(Float.valueOf(highSalaryAvgSavingPercent));
+		
 		configObj.setLowSalaryCustomerPercent(Float.valueOf(lowSalaryCustomerPercent));
 		configObj.setMediumSalaryCustomerPercent(Float.valueOf(mediumSalaryCustomerPercent));
 		configObj.setHighSalaryCustomerPercent(Float.valueOf(highSalaryCustomerPercent));
+		
+		configObj.setMaxDepositThresholdLimit(Double.valueOf(deMonetizationMaxDepositThreshold));
+		configObj.setMaxDepositDailyThresholdLimit(Double.valueOf(deMonetizationMaxDailyDepositThreshold));
 		
 		configObj.setDeMonetizationCRNoTimeIncr(Integer.valueOf(deMonetizationCRNoTimeIncr));
 		configObj.setDeMonetizationDRNoTimeIncr(Integer.valueOf(deMonetizationDRNoTimeIncr));
