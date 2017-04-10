@@ -6,7 +6,7 @@ public class ConfigurationModel {
 	private String masterEmployeeFilePath;
 	private String customerTxnDataFilePath;
 	private String delimiter;
-	private Long dataSize;
+	private Long dataSize; 
 	private String sampleDataStartDate;
 	private String sampleDataEndDate;
 	private String demonetizationThresoldDate;
@@ -36,14 +36,72 @@ public class ConfigurationModel {
 	private List<Double> mediumSalaryDRAfter;
 	private List<Double> highSalaryDRAfter;
 	
+	private Double maxDepositThresholdLimit;
+	private Double maxDepositDailyThresholdLimit;
+	
+	
 	private List<Double> demonitizationCR;
+	
+	private Float lowSalaryAvgSavingPercent;
+	private Float mediumSalaryAvgSavingPercent;
+	private Float highSalaryAvgSavingPercent;
 	
 	private Float lowSalaryCustomerPercent;
 	private Float mediumSalaryCustomerPercent;
 	private Float highSalaryCustomerPercent;
 	
+	public Float getLowSalaryCustomerPercent() {
+		return lowSalaryCustomerPercent;
+	}
+	public void setLowSalaryCustomerPercent(Float lowSalaryCustomerPercent) {
+		this.lowSalaryCustomerPercent = lowSalaryCustomerPercent;
+	}
+	public Float getMediumSalaryCustomerPercent() {
+		return mediumSalaryCustomerPercent;
+	}
+	public void setMediumSalaryCustomerPercent(Float mediumSalaryCustomerPercent) {
+		this.mediumSalaryCustomerPercent = mediumSalaryCustomerPercent;
+	}
+	public Float getHighSalaryCustomerPercent() {
+		return highSalaryCustomerPercent;
+	}
+	public void setHighSalaryCustomerPercent(Float highSalaryCustomerPercent) {
+		this.highSalaryCustomerPercent = highSalaryCustomerPercent;
+	}
 	private Integer deMonetizationCRNoTimeIncr;
 	private Integer deMonetizationDRNoTimeIncr;
+	
+	private List<String> drTxnSummaryList;
+	private List<String> fraudCRProcess;
+	private List<Integer> fraudCRTxnNoIncr;
+	
+	
+	public Double getMaxDepositThresholdLimit() {
+		return maxDepositThresholdLimit;
+	}
+	public void setMaxDepositThresholdLimit(Double maxDepositThresholdLimit) {
+		this.maxDepositThresholdLimit = maxDepositThresholdLimit;
+	}
+	public Double getMaxDepositDailyThresholdLimit() {
+		return maxDepositDailyThresholdLimit;
+	}
+	public void setMaxDepositDailyThresholdLimit(
+			Double maxDepositDailyThresholdLimit) {
+		this.maxDepositDailyThresholdLimit = maxDepositDailyThresholdLimit;
+	}
+	
+	public List<String> getFraudCRProcess() {
+		return fraudCRProcess;
+	}
+	public void setFraudCRProcess(List<String> fraudCRProcess) {
+		this.fraudCRProcess = fraudCRProcess;
+	}
+	public List<Integer> getFraudCRTxnNoIncr() {
+		return fraudCRTxnNoIncr;
+	}
+	public void setFraudCRTxnNoIncr(List<Integer> fraudCRTxnNoIncr) {
+		this.fraudCRTxnNoIncr = fraudCRTxnNoIncr;
+	}
 	public String getMasterEmployeeFilePath() {
 		return masterEmployeeFilePath;
 	}
@@ -231,24 +289,7 @@ public class ConfigurationModel {
 			List<Integer> highSalaryTxnNoDRAndCRAfter) {
 		this.highSalaryTxnNoDRAndCRAfter = highSalaryTxnNoDRAndCRAfter;
 	}
-	public Float getLowSalaryCustomerPercent() {
-		return lowSalaryCustomerPercent;
-	}
-	public void setLowSalaryCustomerPercent(Float lowSalaryCustomerPercent) {
-		this.lowSalaryCustomerPercent = lowSalaryCustomerPercent;
-	}
-	public Float getMediumSalaryCustomerPercent() {
-		return mediumSalaryCustomerPercent;
-	}
-	public void setMediumSalaryCustomerPercent(Float mediumSalaryCustomerPercent) {
-		this.mediumSalaryCustomerPercent = mediumSalaryCustomerPercent;
-	}
-	public Float getHighSalaryCustomerPercent() {
-		return highSalaryCustomerPercent;
-	}
-	public void setHighSalaryCustomerPercent(Float highSalaryCustomerPercent) {
-		this.highSalaryCustomerPercent = highSalaryCustomerPercent;
-	}
+	
 	public Integer getDeMonetizationCRNoTimeIncr() {
 		return deMonetizationCRNoTimeIncr;
 	}
@@ -260,6 +301,30 @@ public class ConfigurationModel {
 	}
 	public void setDeMonetizationDRNoTimeIncr(Integer deMonetizationDRNoTimeIncr) {
 		this.deMonetizationDRNoTimeIncr = deMonetizationDRNoTimeIncr;
+	}
+	public List<String> getDrTxnSummaryList() {
+		return drTxnSummaryList;
+	}
+	public void setDrTxnSummaryList(List<String> drTxnSummaryList) {
+		this.drTxnSummaryList = drTxnSummaryList;
+	}
+	public Float getLowSalaryAvgSavingPercent() {
+		return lowSalaryAvgSavingPercent;
+	}
+	public void setLowSalaryAvgSavingPercent(Float lowSalaryAvgSavingPercent) {
+		this.lowSalaryAvgSavingPercent = lowSalaryAvgSavingPercent;
+	}
+	public Float getMediumSalaryAvgSavingPercent() {
+		return mediumSalaryAvgSavingPercent;
+	}
+	public void setMediumSalaryAvgSavingPercent(Float mediumSalaryAvgSavingPercent) {
+		this.mediumSalaryAvgSavingPercent = mediumSalaryAvgSavingPercent;
+	}
+	public Float getHighSalaryAvgSavingPercent() {
+		return highSalaryAvgSavingPercent;
+	}
+	public void setHighSalaryAvgSavingPercent(Float highSalaryAvgSavingPercent) {
+		this.highSalaryAvgSavingPercent = highSalaryAvgSavingPercent;
 	}
 	
 	
